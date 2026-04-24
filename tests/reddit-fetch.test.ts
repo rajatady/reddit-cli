@@ -103,7 +103,7 @@ describe("redditFetch", () => {
         env: {},
         fetchImpl: async () => new Response("unauth", { status: 401 }),
       }),
-    ).rejects.toThrow("Run `reddit-cli auth login`");
+    ).rejects.toThrow("Run `redditer auth login`");
   });
 
   test("bubbles non-401 errors without retrying", async () => {
@@ -133,7 +133,7 @@ describe("redditFetch", () => {
         fetchImpl: async () => new Response("unauth", { status: 401 }),
         refreshImpl: async () => {
           throw new Error(
-            "Reddit rejected the refresh token (invalid_grant). Run `reddit-cli auth login` to reauthenticate.",
+            "Reddit rejected the refresh token (invalid_grant). Run `redditer auth login` to reauthenticate.",
           );
         },
       }),

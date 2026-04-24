@@ -15,7 +15,7 @@ const registry = buildRegistry();
 describe("cli/help renderers", () => {
   test("renderHelp lists all modules", () => {
     const help = renderHelp(registry);
-    expect(help).toContain("reddit-cli");
+    expect(help).toContain("redditer");
     expect(help).toContain("Modules:");
     for (const m of Object.keys(registry.modules)) expect(help).toContain(m);
   });

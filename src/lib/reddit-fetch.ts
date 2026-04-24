@@ -23,7 +23,7 @@ export async function redditFetch<T = unknown>(
 
   let config = loadConfig({ homeDir: options.homeDir, env: options.env, cwd: options.cwd });
   if (!config.activeAccountId || !config.accessToken) {
-    throw new Error("No active Reddit account. Run `reddit-cli auth login` first.");
+    throw new Error("No active Reddit account. Run `redditer auth login` first.");
   }
 
   const url = path.startsWith("http") ? path : `${config.baseUrl}${path}`;
@@ -41,7 +41,7 @@ export async function redditFetch<T = unknown>(
   if (response.status === 401) {
     if (!config.refreshToken || !config.clientId) {
       throw new Error(
-        "Reddit rejected the saved access token and no refresh token is available. Run `reddit-cli auth login`.",
+        "Reddit rejected the saved access token and no refresh token is available. Run `redditer auth login`.",
       );
     }
     const tokens = await refreshImpl({

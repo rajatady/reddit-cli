@@ -253,8 +253,8 @@ function mapRedditError(
 ): string {
   if (errorCode === "invalid_grant") {
     return mode === "refresh"
-      ? "Reddit rejected the refresh token (invalid_grant). Run `reddit-cli auth login` to reauthenticate."
-      : "Reddit rejected the authorization code (invalid_grant). The code may have expired; run `reddit-cli auth login` again.";
+      ? "Reddit rejected the refresh token (invalid_grant). Run `redditer auth login` to reauthenticate."
+      : "Reddit rejected the authorization code (invalid_grant). The code may have expired; run `redditer auth login` again.";
   }
   if (errorCode === "invalid_client") {
     return "Reddit rejected the client credentials (invalid_client). Check REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.";

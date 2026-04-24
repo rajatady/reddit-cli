@@ -50,7 +50,7 @@ describe("cli", () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("reddit-cli 0.1.0");
+    expect(result.stdout).toContain("redditer 0.1.0");
     expect(result.stdout).toContain("Modules:");
   });
 
@@ -764,13 +764,13 @@ describe("cli", () => {
       env: {},
       refreshAccessToken: async () => {
         throw new Error(
-          "Reddit rejected the refresh token (invalid_grant). Run `reddit-cli auth login` to reauthenticate.",
+          "Reddit rejected the refresh token (invalid_grant). Run `redditer auth login` to reauthenticate.",
         );
       },
     });
 
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain("reddit-cli auth login");
+    expect(result.stderr).toContain("redditer auth login");
   });
 
   test("auth refresh persists a rotated refresh token", async () => {
@@ -1555,7 +1555,7 @@ describe("cli", () => {
       { cwd, env: {} },
     );
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("reddit-cli comments get-comments");
+    expect(result.stdout).toContain("redditer comments get-comments");
     expect(result.stdout).toContain("--post-url <string>");
     expect(result.stdout).toContain("(required)");
     expect(result.stdout).toContain("--out <path>");

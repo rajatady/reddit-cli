@@ -149,7 +149,7 @@ describe("oauth", () => {
             headers: { "content-type": "application/json" },
           }),
       }),
-    ).rejects.toThrow("reddit-cli auth login");
+    ).rejects.toThrow("redditer auth login");
   });
 
   test("maps redirect_uri_mismatch to include the uri the cli sent", async () => {

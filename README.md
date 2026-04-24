@@ -15,36 +15,25 @@ It's a CLI I wanted for running Reddit workflows from agent sessions without the
 
 ## Install
 
-> `reddit-cli` is not on npm yet — the name is taken by an unrelated package. For now, run from source.
+```bash
+npm i -g redditer
+redditer auth login
+```
 
-Requires [Bun](https://bun.sh) ≥ 1.3.
+Requires [Bun](https://bun.sh) ≥ 1.3 on your PATH (the CLI ships as a single Bun-compiled bundle). If you don't have Bun:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+### From source
 
 ```bash
 git clone git@github.com:rajatady/reddit-cli.git
 cd reddit-cli
 bun install
 bun run check   # typecheck + tests (should pass clean)
-```
-
-Then invoke the CLI directly:
-
-```bash
 bun src/index.ts <module> <tool> [flags] --why "..."
-```
-
-### (Planned) global install
-
-Once the package is published under a namespace (`@rajatady/reddit-cli` or similar) and a `bin` entry is wired up, this will become:
-
-```bash
-npm i -g @rajatady/reddit-cli
-reddit-cli <module> <tool> ...
-```
-
-For now, alias it yourself:
-
-```bash
-alias reddit-cli='bun /absolute/path/to/reddit-cli/src/index.ts'
 ```
 
 ## Configure
@@ -89,7 +78,7 @@ export REDDIT_CLIENT_ID=your_client_id
 export REDDIT_CLIENT_SECRET=your_client_secret
 export REDDIT_REDIRECT_URI=http://127.0.0.1:9780/callback
 
-bun src/index.ts auth login
+redditer auth login
 ```
 
 **(b) `.env.local`** in the current working directory — the CLI auto-loads it:
@@ -101,7 +90,7 @@ REDDIT_CLIENT_SECRET=your_client_secret
 REDDIT_REDIRECT_URI=http://127.0.0.1:9780/callback
 ```
 
-Then just run `bun src/index.ts auth login` in that directory.
+Then just run `redditer auth login` in that directory.
 
 **(c) Saved config** — after a successful `auth login`, the credentials are persisted to `~/.reddit-cli/config.json` and you won't need env vars again for subsequent runs. Env still wins if set.
 
@@ -116,7 +105,7 @@ Both `REDDIT_*` and `REDDIT_CLI_*` variants are accepted — e.g. `REDDIT_CLI_CL
 ### 4. Log in
 
 ```bash
-bun src/index.ts auth login
+redditer auth login
 ```
 
 This prints a Reddit authorization URL, opens it in your browser, and starts a local HTTP listener on `127.0.0.1:9780` to catch the callback. Approve the app in the browser; the CLI writes the tokens to `~/.reddit-cli/config.json` and prints your Reddit username.
@@ -124,8 +113,8 @@ This prints a Reddit authorization URL, opens it in your browser, and starts a l
 Verify:
 
 ```bash
-bun src/index.ts auth whoami
-bun src/index.ts users whoami-remote --why "confirm live path"
+redditer auth whoami
+redditer users whoami-remote --why "confirm live path"
 ```
 
 If `auth login` hangs or 400s, the two most common causes are:
@@ -200,27 +189,27 @@ Persistent tracking jobs in `./.reddit-cli/monitors.db`. Each tick captures a sn
 Find people talking about a topic and pull their comment history:
 
 ```bash
-bun src/index.ts search comments --query "cofounder" --subreddit startups --limit 50 --why "find operators"
+redditer search comments --query "cofounder" --subreddit startups --limit 50 --why "find operators"
 jq -r '.comments[].author' /tmp/reddit-cli/search-comments-startups-cofounder.json | sort -u
 
 # Pull one user's comment + post history
-bun src/index.ts users list-comments --username someuser --limit 50 --why "read their comments" --out /tmp/u-someuser-comments.json
-bun src/index.ts users my-submissions  --username someuser --limit 50 --why "read their posts"   --out /tmp/u-someuser-posts.json
+redditer users list-comments --username someuser --limit 50 --why "read their comments" --out /tmp/u-someuser-comments.json
+redditer users my-submissions  --username someuser --limit 50 --why "read their posts"   --out /tmp/u-someuser-posts.json
 ```
 
 Watch a post over two hours:
 
 ```bash
-bun src/index.ts monitors create --post-url https://www.reddit.com/r/bun/comments/abc/x/ --interval-minutes 15 --why "watch growth"
+redditer monitors create --post-url https://www.reddit.com/r/bun/comments/abc/x/ --interval-minutes 15 --why "watch growth"
 # In another terminal, later:
-bun src/index.ts monitors tick --why "poll due jobs"
+redditer monitors tick --why "poll due jobs"
 ```
 
 Replay a past run with a wider limit:
 
 ```bash
-bun src/index.ts history list --module subreddits
-bun src/index.ts history fork hist_abcd --set limit=100
+redditer history list --module subreddits
+redditer history fork hist_abcd --set limit=100
 ```
 
 ## Repository layout

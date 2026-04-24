@@ -5,19 +5,19 @@ import { camelToKebab } from "./strings.ts";
 
 export function renderHelp(registry: Registry): string {
   const lines = [
-    `reddit-cli ${VERSION}`,
+    `redditer ${VERSION}`,
     "",
     "Usage:",
-    "  reddit-cli tools list",
-    "  reddit-cli history [list|show <id>|rerun <id>|fork <id> --set k=v]",
-    "  reddit-cli monitors [create|tick|list|show|stop] ...",
-    "  reddit-cli auth login [--dry-run]",
-    "  reddit-cli auth whoami",
-    "  reddit-cli auth accounts",
-    "  reddit-cli auth use --account <id|username|label>",
-    "  reddit-cli auth refresh [--dry-run]",
-    "  reddit-cli auth logout [--dry-run]",
-    "  reddit-cli <module> <tool> --why <text> [options]",
+    "  redditer tools list",
+    "  redditer history [list|show <id>|rerun <id>|fork <id> --set k=v]",
+    "  redditer monitors [create|tick|list|show|stop] ...",
+    "  redditer auth login [--dry-run]",
+    "  redditer auth whoami",
+    "  redditer auth accounts",
+    "  redditer auth use --account <id|username|label>",
+    "  redditer auth refresh [--dry-run]",
+    "  redditer auth logout [--dry-run]",
+    "  redditer <module> <tool> --why <text> [options]",
     "",
     "Modules:",
   ];
@@ -46,7 +46,7 @@ export function renderModuleHelp(registry: Registry, moduleName: string): string
     `${moduleName} commands`,
     "",
     "Usage:",
-    `  reddit-cli ${moduleName} <subcommand> [options]`,
+    `  redditer ${moduleName} <subcommand> [options]`,
     "",
     "Subcommands:",
   ];
@@ -59,11 +59,11 @@ export function renderModuleHelp(registry: Registry, moduleName: string): string
 
 export function renderToolHelp(module: string, tool: string, def: ToolDefinition): string {
   const lines = [
-    `reddit-cli ${module} ${tool}`,
+    `redditer ${module} ${tool}`,
     def.description,
     "",
     "Usage:",
-    `  reddit-cli ${module} ${tool} [options] --why <text>`,
+    `  redditer ${module} ${tool} [options] --why <text>`,
     "",
     "Options:",
   ];
