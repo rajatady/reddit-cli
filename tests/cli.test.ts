@@ -50,7 +50,7 @@ describe("cli", () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("redditer 0.1.1");
+    expect(result.stdout).toContain("redditer 0.1.2");
     expect(result.stdout).toContain("Modules:");
   });
 
@@ -115,7 +115,7 @@ describe("cli", () => {
     expect(result.stdout).toContain("AUTH DRY RUN");
     expect(result.stdout).toContain("client_id=client-123");
     expect(result.stdout).toContain("127.0.0.1:9780/callback");
-    expect(result.stdout).toContain("userAgent: redditer/0.1.1");
+    expect(result.stdout).toContain("userAgent: redditer/0.1.2");
   });
 
   test("requires client id for auth login", async () => {
@@ -197,7 +197,7 @@ describe("cli", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("consistent_yak");
     expect(result.stdout).toContain("client-123");
-    expect(result.stdout).toContain("userAgent: redditer/0.1.1");
+    expect(result.stdout).toContain("userAgent: redditer/0.1.2");
     expect(result.stdout).toContain("activeAccountId: acct_consistent_yak");
   });
 
@@ -237,7 +237,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.1",
+        userAgent: "redditer/0.1.2",
         scope: "identity read history",
       },
       accounts: {
@@ -302,7 +302,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.1",
+        userAgent: "redditer/0.1.2",
         scope: "identity read history",
       },
       accounts: {
@@ -361,7 +361,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.1",
+        userAgent: "redditer/0.1.2",
         scope: "identity read history",
       },
       accounts: {
@@ -1549,22 +1549,24 @@ describe("cli", () => {
     expect(result.stderr).toContain("needs --username or an active account");
   });
 
-  test("per-tool --help renders the option schema", async () => {
+  test("per-tool --help renders the option schema with required fields, enums, and an example", async () => {
     const cwd = freshWorkspace();
-    const result = await runCli(
-      ["comments", "get-comments", "--help"],
-      { cwd, env: {} },
-    );
+    const result = await runCli(["comments", "get-comments", "--help"], { cwd, env: {} });
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("redditer comments get-comments");
+    expect(result.stdout).toContain("Required:");
     expect(result.stdout).toContain("--post-url <string>");
-    expect(result.stdout).toContain("(required)");
     expect(result.stdout).toContain("--out <path>");
+    expect(result.stdout).toContain("Example:");
 
     const noOpts = await runCli(["users", "whoami-remote", "--help"], { cwd, env: {} });
-    expect(noOpts.stdout).toContain("(no tool-specific options)");
+    expect(noOpts.stdout).toContain("Usage:");
+    expect(noOpts.stdout).toContain("--why <text>");
+    expect(noOpts.stdout).toContain("Example:");
 
     const withDefault = await runCli(["subreddits", "list-posts", "--help"], { cwd, env: {} });
+    expect(withDefault.stdout).toContain("--sort <hot|new|top|rising|controversial>");
+    expect(withDefault.stdout).toContain("--time <all|year|month|week|day|hour>");
     expect(withDefault.stdout).toContain("[default: hot]");
   });
 

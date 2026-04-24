@@ -94,7 +94,7 @@ describe("registry", () => {
     });
     if (pv.kind !== "request") throw new Error("expected request preview");
     expect(pv.path).toBe("/user/yak/comments.json?raw_json=1&sort=new&limit=10");
-    expect(pv.cacheKey).toBe("users/yak/comments/new/10");
+    expect(pv.cacheKey).toBe("users/yak/comments/new/na/10");
   });
 
   test("users list-comments falls back to activeUsername and errors when missing", () => {
@@ -172,7 +172,7 @@ describe("registry", () => {
       method: "GET",
       url: "https://oauth.reddit.com/r/typescript/new.json?raw_json=1&limit=10",
       path: "/r/typescript/new.json?raw_json=1&limit=10",
-      cacheKey: "subreddits/typescript/new/10",
+      cacheKey: "subreddits/typescript/new/na/10",
     });
   });
 });

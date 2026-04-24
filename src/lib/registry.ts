@@ -15,6 +15,7 @@ export interface ToolOptionDefinition {
   description: string;
   required?: boolean;
   defaultValue?: string | number | boolean;
+  allowedValues?: string[];
 }
 
 export interface ToolAnnotations {
@@ -46,6 +47,7 @@ export interface ToolDefinition {
   kind: ToolKind;
   options: Record<string, ToolOptionDefinition>;
   annotations: ToolAnnotations;
+  example?: string;
   buildPreview: (context: ToolExecutionContext) => ToolPreview;
   normalize?: (raw: unknown, params: Record<string, unknown>) => unknown;
 }
@@ -63,6 +65,22 @@ export interface Registry {
 
 function buildToolKey(moduleName: string, toolName: string): string {
   return `${moduleName}:${toolName}`;
+}
+
+const TIME_SORTS = new Set(["top", "controversial"]);
+const TIME_VALUES = ["all", "year", "month", "week", "day", "hour"];
+const SEARCH_SORT_VALUES = ["relevance", "hot", "top", "new", "comments"];
+
+// Reddit honors ?t=<all|year|month|week|day|hour> only on top/controversial.
+// For other sorts the param is ignored; we strip it to keep URLs clean.
+function timeQuery(sort: string, rawTime: unknown): string {
+  if (!TIME_SORTS.has(sort)) return "";
+  const time = String(rawTime ?? "all");
+  return `&t=${time}`;
+}
+
+function timeKey(sort: string, rawTime: unknown): string {
+  return TIME_SORTS.has(sort) ? String(rawTime ?? "all") : "na";
 }
 
 function postRequest(params: Record<string, unknown>, baseUrl: string): RequestPreview {
@@ -153,6 +171,7 @@ export function buildRegistry(): Registry {
       kind: "request",
       options: {},
       annotations: { cacheable: true, writes: false },
+      example: 'redditer users whoami-remote --why "profile snapshot" --out -',
       buildPreview: ({ baseUrl }) => ({
         kind: "request",
         method: "GET",
@@ -175,8 +194,15 @@ export function buildRegistry(): Registry {
         },
         sort: {
           type: "string",
-          description: "Listing sort: new | top | hot | controversial.",
+          description: "Listing sort.",
           defaultValue: "new",
+          allowedValues: ["new", "top", "hot", "controversial"],
+        },
+        time: {
+          type: "string",
+          description: "Time window (only applies when sort is top or controversial).",
+          defaultValue: "all",
+          allowedValues: TIME_VALUES,
         },
         limit: {
           type: "number",
@@ -185,6 +211,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer users my-submissions --username yak --sort top --time month --limit 50 --why "audit my posts"',
       buildPreview: ({ params, baseUrl, activeUsername }) => {
         const username = String(params.username ?? activeUsername ?? "");
         if (!username) {
@@ -194,13 +222,14 @@ export function buildRegistry(): Registry {
         }
         const sort = String(params.sort ?? "new");
         const limit = Number(params.limit ?? 25);
-        const path = `/user/${username}/submitted.json?raw_json=1&sort=${sort}&limit=${limit}`;
+        const timeQs = timeQuery(sort, params.time);
+        const path = `/user/${username}/submitted.json?raw_json=1&sort=${sort}&limit=${limit}${timeQs}`;
         return {
           kind: "request",
           method: "GET",
           url: `${baseUrl}${path}`,
           path,
-          cacheKey: `users/${username}/submitted/${sort}/${limit}`,
+          cacheKey: `users/${username}/submitted/${sort}/${timeKey(sort, params.time)}/${limit}`,
         };
       },
       normalize: (raw, params) =>
@@ -222,8 +251,15 @@ export function buildRegistry(): Registry {
         },
         sort: {
           type: "string",
-          description: "Comment sort: new | top | hot | controversial.",
+          description: "Comment sort.",
           defaultValue: "new",
+          allowedValues: ["new", "top", "hot", "controversial"],
+        },
+        time: {
+          type: "string",
+          description: "Time window (only applies when sort is top or controversial).",
+          defaultValue: "all",
+          allowedValues: TIME_VALUES,
         },
         limit: {
           type: "number",
@@ -232,6 +268,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer users list-comments --username yak --sort top --time year --limit 50 --why "read their comments"',
       buildPreview: ({ params, baseUrl, activeUsername }) => {
         const username = String(params.username ?? activeUsername ?? "");
         if (!username) {
@@ -241,13 +279,14 @@ export function buildRegistry(): Registry {
         }
         const sort = String(params.sort ?? "new");
         const limit = Number(params.limit ?? 25);
-        const path = `/user/${username}/comments.json?raw_json=1&sort=${sort}&limit=${limit}`;
+        const timeQs = timeQuery(sort, params.time);
+        const path = `/user/${username}/comments.json?raw_json=1&sort=${sort}&limit=${limit}${timeQs}`;
         return {
           kind: "request",
           method: "GET",
           url: `${baseUrl}${path}`,
           path,
-          cacheKey: `users/${username}/comments/${sort}/${limit}`,
+          cacheKey: `users/${username}/comments/${sort}/${timeKey(sort, params.time)}/${limit}`,
         };
       },
       normalize: (raw, params) =>
@@ -274,13 +313,15 @@ export function buildRegistry(): Registry {
         },
         sort: {
           type: "string",
-          description: "Sort: relevance | hot | top | new | comments.",
+          description: "Result sort.",
           defaultValue: "relevance",
+          allowedValues: SEARCH_SORT_VALUES,
         },
         time: {
           type: "string",
-          description: "Time window: all | year | month | week | day | hour.",
+          description: "Time window.",
           defaultValue: "all",
+          allowedValues: TIME_VALUES,
         },
         limit: {
           type: "number",
@@ -289,6 +330,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer search posts --query "cofounder" --subreddit startups --sort new --time month --limit 50 --why "find threads"',
       buildPreview: ({ params, baseUrl }) => {
         const query = String(params.query ?? "");
         const sort = String(params.sort ?? "relevance");
@@ -331,13 +374,15 @@ export function buildRegistry(): Registry {
         },
         sort: {
           type: "string",
-          description: "Sort: relevance | hot | top | new | comments.",
+          description: "Result sort.",
           defaultValue: "relevance",
+          allowedValues: SEARCH_SORT_VALUES,
         },
         time: {
           type: "string",
-          description: "Time window: all | year | month | week | day | hour.",
+          description: "Time window.",
           defaultValue: "all",
+          allowedValues: TIME_VALUES,
         },
         limit: {
           type: "number",
@@ -346,6 +391,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer search comments --query "cofounder" --subreddit startups --limit 50 --why "find commenters"',
       buildPreview: ({ params, baseUrl }) => {
         const query = String(params.query ?? "");
         const sort = String(params.sort ?? "relevance");
@@ -384,6 +431,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer posts get-post --post-url https://www.reddit.com/r/bun/comments/abc/x/ --why "inspect post"',
       buildPreview: ({ params, baseUrl }) => postRequest(params, baseUrl),
       normalize: (raw) => {
         const { post } = normalizePostWithComments(raw);
@@ -404,6 +453,8 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer comments get-comments --post-url https://www.reddit.com/r/bun/comments/abc/x/ --why "read thread"',
       buildPreview: ({ params, baseUrl }) => postRequest(params, baseUrl),
       normalize: (raw) => normalizePostWithComments(raw),
     },
@@ -421,8 +472,15 @@ export function buildRegistry(): Registry {
         },
         sort: {
           type: "string",
-          description: "Listing sort order.",
+          description: "Listing sort.",
           defaultValue: "hot",
+          allowedValues: ["hot", "new", "top", "rising", "controversial"],
+        },
+        time: {
+          type: "string",
+          description: "Time window (only applies when sort is top or controversial).",
+          defaultValue: "all",
+          allowedValues: TIME_VALUES,
         },
         limit: {
           type: "number",
@@ -431,17 +489,20 @@ export function buildRegistry(): Registry {
         },
       },
       annotations: { cacheable: true, writes: false },
+      example:
+        'redditer subreddits list-posts --subreddit bun --sort top --time week --limit 50 --why "weekly digest" --out -',
       buildPreview: ({ params, baseUrl }) => {
         const subreddit = parseSubreddit(String(params.subreddit));
         const sort = String(params.sort ?? "hot");
         const limit = Number(params.limit ?? 25);
-        const path = `/r/${subreddit}/${sort}.json?raw_json=1&limit=${limit}`;
+        const timeQs = timeQuery(sort, params.time);
+        const path = `/r/${subreddit}/${sort}.json?raw_json=1&limit=${limit}${timeQs}`;
         return {
           kind: "request",
           method: "GET",
           url: `${baseUrl}${path}`,
           path,
-          cacheKey: `subreddits/${subreddit}/${sort}/${limit}`,
+          cacheKey: `subreddits/${subreddit}/${sort}/${timeKey(sort, params.time)}/${limit}`,
         };
       },
       normalize: (raw, params) =>

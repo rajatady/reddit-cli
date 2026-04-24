@@ -59,40 +59,75 @@ export function renderModuleHelp(registry: Registry, moduleName: string): string
 }
 
 export function renderToolHelp(module: string, tool: string, def: ToolDefinition): string {
-  const lines = [
+  const entries = Object.entries(def.options);
+  const required = entries.filter(([, opt]) => opt.required);
+  const optional = entries.filter(([, opt]) => !opt.required);
+  const isRequest = def.kind === "request";
+
+  const reqFlagsSummary = required.map(([n]) => `--${camelToKebab(n)} <${optionTypeHint(n, def.options[n]!)}>`);
+  const usagePieces = ["redditer", module, tool, ...reqFlagsSummary];
+  if (isRequest) usagePieces.push("--why <text>");
+  usagePieces.push("[options]");
+
+  const lines: string[] = [
     `redditer ${module} ${tool}`,
     def.description,
     "",
     "Usage:",
-    `  redditer ${module} ${tool} [options] --why <text>`,
+    `  ${usagePieces.join(" ")}`,
     "",
-    "Options:",
+    "Required:",
   ];
-  const opts = Object.entries(def.options);
-  if (opts.length === 0) {
-    lines.push("  (no tool-specific options)");
-  } else {
-    for (const [name, opt] of opts) {
-      const flag = `--${camelToKebab(name)}`;
-      const typeBit = opt.type === "boolean" ? "" : ` <${opt.type}>`;
-      const req = opt.required ? " (required)" : "";
-      const defBit =
-        opt.defaultValue !== undefined ? ` [default: ${String(opt.defaultValue)}]` : "";
-      lines.push(`  ${flag}${typeBit}${req}${defBit}`);
-      lines.push(`      ${opt.description}`);
+
+  for (const [name, opt] of required) {
+    lines.push(...renderOption(name, opt));
+  }
+  if (isRequest) {
+    lines.push("  --why <text>");
+    lines.push("      Why you're running this (recorded to history).");
+  }
+  if (required.length === 0 && !isRequest) {
+    lines.push("  (none)");
+  }
+
+  if (optional.length > 0) {
+    lines.push("");
+    lines.push("Options:");
+    for (const [name, opt] of optional) {
+      lines.push(...renderOption(name, opt));
     }
   }
-  lines.push("");
-  lines.push("Common options:");
-  lines.push("  --why <text>    (required) why you're running this");
-  lines.push("  --dry-run       print the planned request without executing");
-  if (def.kind === "request") {
-    lines.push("  --out <path>    write response JSON to path (use - for stdout)");
+
+  if (isRequest) {
+    lines.push("");
+    lines.push("Output:");
+    lines.push("  --out <path>      Write response JSON to <path>.");
     lines.push(
-      "                  default: /tmp/reddit-cli/<auto-named>.json (override with REDDIT_CLI_OUT_DIR)",
+      "                    Default: /tmp/reddit-cli/<auto-named>.json (override dir with REDDIT_CLI_OUT_DIR).",
     );
+    lines.push("  --out -           Write response JSON to stdout (for | jq).");
+    lines.push("  --dry-run         Print the planned request without executing.");
   }
+
+  if (def.example) {
+    lines.push("");
+    lines.push("Example:");
+    lines.push(`  ${def.example}`);
+  }
+
   return lines.join("\n");
+}
+
+function optionTypeHint(_name: string, opt: ToolDefinition["options"][string]): string {
+  if (opt.allowedValues && opt.allowedValues.length > 0) return opt.allowedValues.join("|");
+  return opt.type;
+}
+
+function renderOption(name: string, opt: ToolDefinition["options"][string]): string[] {
+  const flag = `--${camelToKebab(name)}`;
+  const typeBit = opt.type === "boolean" ? "" : ` <${optionTypeHint(name, opt)}>`;
+  const defBit = opt.defaultValue !== undefined ? `  [default: ${String(opt.defaultValue)}]` : "";
+  return [`  ${flag}${typeBit}${defBit}`, `      ${opt.description}`];
 }
 
 export function renderAccounts(config: Config): string {

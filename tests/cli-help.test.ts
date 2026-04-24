@@ -32,20 +32,32 @@ describe("cli/help renderers", () => {
     expect(renderModuleHelp(registry, "auth")).toContain("auth login");
   });
 
-  test("renderToolHelp describes the option schema", () => {
+  test("renderToolHelp enumerates required fields, enum values, defaults, and an example", () => {
     const tool = findTool(registry, "subreddits", "list-posts")!;
     const help = renderToolHelp("subreddits", "list-posts", tool);
+    // Required section shows the flag with its type
+    expect(help).toContain("Required:");
     expect(help).toContain("--subreddit <string>");
-    expect(help).toContain("(required)");
-    expect(help).toContain("--sort <string>");
+    // Enum values render inline so the user sees allowed values at a glance
+    expect(help).toContain("--sort <hot|new|top|rising|controversial>");
+    expect(help).toContain("--time <all|year|month|week|day|hour>");
     expect(help).toContain("[default: hot]");
+    // Output section documents --out and --dry-run
     expect(help).toContain("--out <path>");
+    expect(help).toContain("--dry-run");
+    // Example is a paste-ready command
+    expect(help).toContain("Example:");
+    expect(help).toContain("redditer subreddits list-posts --subreddit bun");
   });
 
-  test("renderToolHelp notes tool-specific options missing for simple tools", () => {
+  test("renderToolHelp for a tool with no options still shows usage, output section, and example", () => {
     const tool = findTool(registry, "users", "whoami-remote")!;
     const help = renderToolHelp("users", "whoami-remote", tool);
-    expect(help).toContain("(no tool-specific options)");
+    expect(help).toContain("Usage:");
+    expect(help).toContain("--why <text>");
+    expect(help).toContain("--out <path>");
+    expect(help).toContain("Example:");
+    expect(help).toContain("redditer users whoami-remote");
   });
 
   test("renderAccounts handles empty and populated lists", () => {
