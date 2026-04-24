@@ -11,6 +11,7 @@ export function renderHelp(registry: Registry): string {
     "  redditer tools list",
     "  redditer history [list|show <id>|rerun <id>|fork <id> --set k=v]",
     "  redditer monitors [create|tick|list|show|stop] ...",
+    "  redditer report-bug [--title ...] [--what ...] [--id <prefix>|--last N]",
     "  redditer auth login [--dry-run]",
     "  redditer auth whoami",
     "  redditer auth accounts",

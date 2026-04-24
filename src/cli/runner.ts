@@ -13,6 +13,7 @@ import { renderHelp, renderModuleHelp, renderToolHelp, renderToolsList } from ".
 import { HistoryCommand } from "./history-command.ts";
 import { MonitorsCommand } from "./monitors-command.ts";
 import { parseToolArgs, stripCliFields } from "./parse-args.ts";
+import { ReportBugCommand } from "./report-bug-command.ts";
 import { findClosest } from "./strings.ts";
 import { ToolExecutor } from "./tool-executor.ts";
 
@@ -31,6 +32,7 @@ export interface RunCliOptions {
   redditFetch?: typeof defaultRedditFetch;
   fetchImpl?: FetchLike;
   printLine?: (line: string) => void;
+  openBrowser?: (url: string) => void;
   forkedFrom?: string | null;
 }
 
@@ -83,6 +85,17 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     return done(result.exitCode, [...stdout, ...result.stdoutLines], [...stderr, ...result.stderrLines]);
   }
 
+  if (argv[0] === "report-bug") {
+    const command = new ReportBugCommand({
+      config,
+      history,
+      openBrowser: options.openBrowser,
+      printLine,
+    });
+    const result = command.run(argv.slice(1));
+    return done(result.exitCode, [...stdout, ...result.stdoutLines], [...stderr, ...result.stderrLines]);
+  }
+
   if (argv[0] === "monitors") {
     const command = new MonitorsCommand({
       monitors: new Monitors(resolveMonitorsPath({ env, cwd })),
@@ -109,6 +122,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       "history",
       "tools",
       "monitors",
+      "report-bug",
     ]);
     stderr.push(`Unknown command: ${moduleName}`);
     if (suggestion) stderr.push(`Did you mean '${suggestion}'?`);

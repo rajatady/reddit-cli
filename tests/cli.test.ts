@@ -1753,6 +1753,45 @@ describe("cli", () => {
     expect(parsed.comments[0]!.id).toBe("c1");
   });
 
+  test("report-bug opens a pre-filled GitHub issue with sanitised context", async () => {
+    const cwd = freshWorkspace();
+    await runCli(
+      [
+        "posts",
+        "get-post",
+        "--post-url",
+        "https://www.reddit.com/r/bun/comments/abc/x/",
+        "--why",
+        "secret reason",
+        "--dry-run",
+      ],
+      { cwd, env: {}, createId: () => "hist_bugreport" },
+    );
+
+    const opened: string[] = [];
+    const result = await runCli(["report-bug", "--title", "broken", "--what", "it died"], {
+      cwd,
+      env: {},
+      openBrowser: (url) => opened.push(url),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(opened).toHaveLength(1);
+    const decoded = decodeURIComponent(opened[0]!);
+    expect(decoded).toContain("redditer version");
+    expect(decoded).toContain("hist_bugre");
+    expect(decoded).toContain("posts / get-post");
+    expect(decoded).not.toContain("secret reason");
+  });
+
+  test("report-bug surfaces flag errors", async () => {
+    const badFlag = await runCli(["report-bug", "--nope"], {
+      cwd: freshWorkspace(),
+      env: {},
+    });
+    expect(badFlag.exitCode).toBe(1);
+    expect(badFlag.stderr).toContain("Unknown report-bug flag");
+  });
+
   test("supports subreddit listing dry-runs and help flag", async () => {
     const listResult = await runCli(
       [

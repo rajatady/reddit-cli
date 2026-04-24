@@ -147,6 +147,14 @@ Persistent tracking jobs in `./.reddit-cli/monitors.db`. Each tick captures a sn
 | `monitors show <id>` | Show job + full snapshot history (JSON). |
 | `monitors stop <id> --why ...` | Deactivate a job. |
 
+### Report a bug
+
+```bash
+redditer report-bug --title "auth refresh 400s" --what "..." --expected "..."
+```
+
+Opens a pre-filled GitHub issue in your browser with environment details and your last few CLI calls (tool names, exit codes, timings). Deliberately omits params, response data, `why` text, usernames, and tokens — but review the form before submitting anyway. Flags: `--title`, `--what`, `--expected`, `--steps`, `--id <prefix>` (one specific history entry), `--last N` (default 5).
+
 ## Recipes
 
 **Find operators talking about a topic, then dig into a specific person:**
