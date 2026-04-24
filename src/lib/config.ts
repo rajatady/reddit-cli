@@ -2,6 +2,8 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { VERSION } from "./version.ts";
+
 export interface AccountSummary {
   id: string;
   label: string | null;
@@ -91,7 +93,7 @@ interface UpdateActiveAccountTokensOptions extends SaveConfigOptions {
 
 const DEFAULT_BASE_URL = "https://oauth.reddit.com";
 const DEFAULT_SCOPE = "identity read history";
-const DEFAULT_USER_AGENT = "reddit-cli/0.1.0";
+const DEFAULT_USER_AGENT = `redditer/${VERSION}`;
 
 const COMPAT_ENV_NAMES = {
   clientId: ["REDDIT_CLI_CLIENT_ID", "REDDIT_CLIENT_ID"],

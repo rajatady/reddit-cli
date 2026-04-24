@@ -50,7 +50,7 @@ describe("cli", () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("redditer 0.1.0");
+    expect(result.stdout).toContain("redditer 0.1.1");
     expect(result.stdout).toContain("Modules:");
   });
 
@@ -102,6 +102,7 @@ describe("cli", () => {
       ["auth", "login", "--dry-run"],
       {
         cwd: freshWorkspace(),
+        homeDir: freshWorkspace(),
         env: {
           REDDIT_CLI_CLIENT_ID: "client-123",
           REDDIT_CLI_REDIRECT_URI: "http://127.0.0.1:9780/callback",
@@ -114,7 +115,7 @@ describe("cli", () => {
     expect(result.stdout).toContain("AUTH DRY RUN");
     expect(result.stdout).toContain("client_id=client-123");
     expect(result.stdout).toContain("127.0.0.1:9780/callback");
-    expect(result.stdout).toContain("userAgent: reddit-cli/0.1.0");
+    expect(result.stdout).toContain("userAgent: redditer/0.1.1");
   });
 
   test("requires client id for auth login", async () => {
@@ -196,7 +197,7 @@ describe("cli", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("consistent_yak");
     expect(result.stdout).toContain("client-123");
-    expect(result.stdout).toContain("userAgent: reddit-cli/0.1.0");
+    expect(result.stdout).toContain("userAgent: redditer/0.1.1");
     expect(result.stdout).toContain("activeAccountId: acct_consistent_yak");
   });
 
@@ -236,7 +237,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "reddit-cli/0.1.0",
+        userAgent: "redditer/0.1.1",
         scope: "identity read history",
       },
       accounts: {
@@ -301,7 +302,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "reddit-cli/0.1.0",
+        userAgent: "redditer/0.1.1",
         scope: "identity read history",
       },
       accounts: {
@@ -360,7 +361,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "reddit-cli/0.1.0",
+        userAgent: "redditer/0.1.1",
         scope: "identity read history",
       },
       accounts: {

@@ -194,7 +194,7 @@ redditer posts get-post --post-url <url> --why "inspect" --out - | jq '.post.sco
 | `REDDIT_CLIENT_ID` / `REDDIT_CLI_CLIENT_ID` | — | Reddit app client id (required for login). |
 | `REDDIT_CLIENT_SECRET` / `REDDIT_CLI_CLIENT_SECRET` | — | Reddit app client secret. |
 | `REDDIT_REDIRECT_URI` / `REDDIT_CLI_REDIRECT_URI` | `http://127.0.0.1:9780/callback` | Must match your Reddit app. |
-| `REDDIT_CLI_USER_AGENT` | `reddit-cli/0.1.0` | User-Agent sent to Reddit. |
+| `REDDIT_CLI_USER_AGENT` | `redditer/<version>` | User-Agent sent to Reddit. |
 | `REDDIT_CLI_SCOPE` | `identity read history` | OAuth scopes to request. |
 | `REDDIT_CLI_OUT_DIR` | `/tmp/reddit-cli` | Default dump directory. |
 
