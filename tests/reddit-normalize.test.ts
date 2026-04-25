@@ -6,6 +6,8 @@ import {
   normalizeListing,
   normalizePostWithComments,
   normalizeProfile,
+  normalizeSubredditListing,
+  normalizeSubredditNames,
 } from "../src/lib/reddit-normalize.ts";
 
 describe("reddit-normalize", () => {
@@ -137,6 +139,56 @@ describe("reddit-normalize", () => {
   test("normalizeCommentListing handles malformed input gracefully", () => {
     expect(normalizeCommentListing(null, { source: "x", sort: "new" }).comments).toEqual([]);
     expect(normalizeCommentListing({ data: {} }, { source: "x", sort: "new" }).comments).toEqual([]);
+  });
+
+  test("normalizeSubredditListing extracts t5 children with metadata", () => {
+    const result = normalizeSubredditListing(
+      {
+        data: {
+          children: [
+            {
+              kind: "t5",
+              data: {
+                display_name: "AstoriaQueens",
+                display_name_prefixed: "r/AstoriaQueens",
+                subscribers: 2191,
+                public_description: "Local sub for Astoria, NYC.",
+                subreddit_type: "public",
+                over18: false,
+                created_utc: 1300000000,
+                url: "/r/AstoriaQueens/",
+              },
+            },
+            { kind: "t1", data: { id: "skipme" } },
+          ],
+        },
+      },
+      { query: "astoria", mode: "fuzzy" },
+    );
+    expect(result.mode).toBe("fuzzy");
+    expect(result.query).toBe("astoria");
+    expect(result.subreddits).toHaveLength(1);
+    expect(result.subreddits[0]!.name).toBe("AstoriaQueens");
+    expect(result.subreddits[0]!.subscribers).toBe(2191);
+    expect(result.subreddits[0]!.source).toBe("fuzzy");
+  });
+
+  test("normalizeSubredditListing tolerates malformed input", () => {
+    expect(normalizeSubredditListing(null, { query: "x", mode: "prefix" }).subreddits).toEqual([]);
+    expect(normalizeSubredditListing({ data: {} }, { query: "x", mode: "prefix" }).subreddits).toEqual([]);
+  });
+
+  test("normalizeSubredditNames returns minimal entries from name array", () => {
+    const result = normalizeSubredditNames({ names: ["astoria", "AstoriaQueens", 123] }, { query: "astoria" });
+    expect(result.mode).toBe("exact");
+    expect(result.subreddits.map((s) => s.name)).toEqual(["astoria", "AstoriaQueens"]);
+    expect(result.subreddits[0]!.prefixed).toBe("r/astoria");
+    expect(result.subreddits[0]!.subscribers).toBe(0);
+    expect(result.subreddits[0]!.source).toBe("exact");
+  });
+
+  test("normalizeSubredditNames handles missing names field", () => {
+    expect(normalizeSubredditNames({}, { query: "x" }).subreddits).toEqual([]);
   });
 
   test("normalizePostWithComments returns empty when input is malformed", () => {

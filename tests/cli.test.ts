@@ -6,6 +6,9 @@ import { tmpdir } from "node:os";
 import { runCli } from "../src/cli.ts";
 import { configPath } from "../src/lib/config.ts";
 import { History } from "../src/lib/history.ts";
+import { VERSION } from "../src/lib/version.ts";
+
+const UA = `redditer/${VERSION}`;
 
 const tempDirs: string[] = [];
 
@@ -50,7 +53,7 @@ describe("cli", () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("redditer 0.1.2");
+    expect(result.stdout).toContain(`redditer ${VERSION}`);
     expect(result.stdout).toContain("Modules:");
   });
 
@@ -115,7 +118,7 @@ describe("cli", () => {
     expect(result.stdout).toContain("AUTH DRY RUN");
     expect(result.stdout).toContain("client_id=client-123");
     expect(result.stdout).toContain("127.0.0.1:9780/callback");
-    expect(result.stdout).toContain("userAgent: redditer/0.1.2");
+    expect(result.stdout).toContain(`userAgent: ${UA}`);
   });
 
   test("requires client id for auth login", async () => {
@@ -197,7 +200,7 @@ describe("cli", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("consistent_yak");
     expect(result.stdout).toContain("client-123");
-    expect(result.stdout).toContain("userAgent: redditer/0.1.2");
+    expect(result.stdout).toContain(`userAgent: ${UA}`);
     expect(result.stdout).toContain("activeAccountId: acct_consistent_yak");
   });
 
@@ -237,7 +240,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.2",
+        userAgent: UA,
         scope: "identity read history",
       },
       accounts: {
@@ -302,7 +305,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.2",
+        userAgent: UA,
         scope: "identity read history",
       },
       accounts: {
@@ -361,7 +364,7 @@ describe("cli", () => {
         clientId: "client-123",
         clientSecret: "secret-123",
         redirectUri: "http://127.0.0.1:9780/callback",
-        userAgent: "redditer/0.1.2",
+        userAgent: UA,
         scope: "identity read history",
       },
       accounts: {
@@ -1702,6 +1705,73 @@ describe("cli", () => {
     expect(seenUrl).toContain("restrict_sr=on");
     const parsed = JSON.parse(result.stdout) as { posts: Array<{ id: string }> };
     expect(parsed.posts.map((p) => p.id)).toEqual(["p1"]);
+  });
+
+  test("live subreddits search routes by mode and applies min-subscribers", async () => {
+    const cwd = freshWorkspace();
+    const homeDir = freshWorkspace();
+    const env = {
+      REDDIT_CLI_CLIENT_ID: "c",
+      REDDIT_CLI_REDIRECT_URI: "http://127.0.0.1:9780/callback",
+    };
+    await runCli(["auth", "login"], {
+      cwd,
+      homeDir,
+      env,
+      authorizeWithReddit: async () => ({
+        authUrl: "x",
+        tokens: { accessToken: "a", refreshToken: "r", scope: "identity", expiresAt: 1 },
+        identity: { name: "yak", id: "user-1" },
+      }),
+    });
+
+    const seenUrls: string[] = [];
+    const fetchImpl = async (url: string | URL | Request) => {
+      const u = String(url);
+      seenUrls.push(u);
+      if (u.includes("/api/search_reddit_names.json")) {
+        return new Response(JSON.stringify({ names: ["astoria", "AstoriaQueens"] }), { status: 200 });
+      }
+      // Fuzzy + prefix endpoints both return Listing-of-t5
+      return new Response(
+        JSON.stringify({
+          data: {
+            children: [
+              { kind: "t5", data: { display_name: "small", subscribers: 50 } },
+              { kind: "t5", data: { display_name: "big", subscribers: 5000, public_description: "Local." } },
+            ],
+          },
+        }),
+        { status: 200 },
+      );
+    };
+
+    const fuzzy = await runCli(
+      [
+        "subreddits", "search",
+        "--query", "astoria",
+        "--mode", "fuzzy",
+        "--min-subscribers", "1000",
+        "--why", "find local subs",
+        "--out", "-",
+      ],
+      { cwd, homeDir, env: {}, fetchImpl },
+    );
+    expect(fuzzy.exitCode).toBe(0);
+    expect(seenUrls.at(-1)).toContain("/subreddits/search.json");
+    const fuzzyData = JSON.parse(fuzzy.stdout) as { mode: string; subreddits: Array<{ name: string }> };
+    expect(fuzzyData.mode).toBe("fuzzy");
+    expect(fuzzyData.subreddits.map((s) => s.name)).toEqual(["big"]);
+
+    const exact = await runCli(
+      ["subreddits", "search", "--query", "astoria", "--mode", "exact", "--why", "names", "--out", "-"],
+      { cwd, homeDir, env: {}, fetchImpl },
+    );
+    expect(exact.exitCode).toBe(0);
+    expect(seenUrls.at(-1)).toContain("/api/search_reddit_names.json");
+    const exactData = JSON.parse(exact.stdout) as { mode: string; subreddits: Array<{ name: string }> };
+    expect(exactData.mode).toBe("exact");
+    expect(exactData.subreddits.map((s) => s.name)).toEqual(["astoria", "AstoriaQueens"]);
   });
 
   test("live search comments hits /search.json with type=comment", async () => {

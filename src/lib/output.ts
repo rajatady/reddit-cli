@@ -36,6 +36,11 @@ export function toolOutputSlug(input: ToolOutputSlugInput): string {
     const s = safe(params.sort ?? "new");
     return `comments-${u}-${s}.json`;
   }
+  if (module === "subreddits" && tool === "search") {
+    const q = safe(params.query ?? "q");
+    const m = safe(params.mode ?? "fuzzy");
+    return `subreddits-search-${m}-${q}.json`;
+  }
   if (module === "search" && (tool === "posts" || tool === "comments")) {
     const scope = safe(params.subreddit ?? "all");
     const q = safe(params.query ?? "q");
@@ -122,6 +127,17 @@ export function summarizeResponse(
       lines.push(`  - ${String(p.id)}  score=${Number(p.score ?? 0)}  numComments=${Number(p.numComments ?? 0)}  ${shorten(String(p.title ?? ""), 70)}`);
     }
     if (posts.length > 5) lines.push(`  …and ${posts.length - 5} more.`);
+    return lines;
+  }
+  if (module === "subreddits" && tool === "search") {
+    const subs = (v.subreddits as Array<Record<string, unknown>>) ?? [];
+    lines.push(`subreddits search: ${subs.length} hits  mode=${String(v.mode ?? "?")}  query="${String(v.query ?? "")}"`);
+    for (const s of subs.slice(0, 8)) {
+      const subs2 = Number(s.subscribers ?? 0);
+      const desc = shorten(String(s.publicDescription ?? "").replace(/\s+/g, " "), 60);
+      lines.push(`  - r/${String(s.name)}  subs=${subs2.toLocaleString()}  ${desc}`);
+    }
+    if (subs.length > 8) lines.push(`  …and ${subs.length - 8} more.`);
     return lines;
   }
   if (module === "search" && tool === "posts") {

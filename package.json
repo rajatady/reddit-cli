@@ -1,6 +1,6 @@
 {
   "name": "redditer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Bun-first Reddit CLI with OAuth, history, monitors, and search.",
   "type": "module",
   "bin": {

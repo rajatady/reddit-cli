@@ -38,6 +38,24 @@ export interface RedditListing {
   posts: RedditPost[];
 }
 
+export interface RedditSubredditSummary {
+  name: string;
+  prefixed: string;
+  subscribers: number;
+  publicDescription: string;
+  subredditType: string;
+  over18: boolean;
+  createdUtc: number;
+  url: string;
+  source: "fuzzy" | "prefix" | "exact";
+}
+
+export interface RedditSubredditSearchResult {
+  query: string;
+  mode: "fuzzy" | "prefix" | "exact";
+  subreddits: RedditSubredditSummary[];
+}
+
 export interface RedditCommentSummary {
   id: string;
   author: string;
@@ -130,6 +148,67 @@ export function normalizeListing(
     posts: children
       .filter((child) => child.kind === "t3" && child.data)
       .map((child) => normalizePost(child.data!)),
+  };
+}
+
+export function normalizeSubredditSummary(
+  raw: Record<string, unknown>,
+  source: RedditSubredditSummary["source"],
+): RedditSubredditSummary {
+  const name = str(raw.display_name);
+  return {
+    name,
+    prefixed: str(raw.display_name_prefixed) || (name ? `r/${name}` : ""),
+    subscribers: num(raw.subscribers),
+    publicDescription: str(raw.public_description),
+    subredditType: str(raw.subreddit_type),
+    over18: Boolean(raw.over18 ?? raw.over_18),
+    createdUtc: num(raw.created_utc),
+    url: str(raw.url),
+    source,
+  };
+}
+
+export function normalizeSubredditListing(
+  raw: unknown,
+  meta: { query: string; mode: "fuzzy" | "prefix" },
+): RedditSubredditSearchResult {
+  const data =
+    ((raw as { data?: { children?: RawChild[] } })?.data) ?? {};
+  const children = data.children ?? [];
+  return {
+    query: meta.query,
+    mode: meta.mode,
+    subreddits: children
+      .filter((child) => child.kind === "t5" && child.data)
+      .map((child) => normalizeSubredditSummary(child.data!, meta.mode)),
+  };
+}
+
+export function normalizeSubredditNames(
+  raw: unknown,
+  meta: { query: string },
+): RedditSubredditSearchResult {
+  const names =
+    Array.isArray((raw as { names?: unknown }).names)
+      ? ((raw as { names?: unknown[] }).names ?? [])
+      : [];
+  return {
+    query: meta.query,
+    mode: "exact",
+    subreddits: names
+      .filter((n): n is string => typeof n === "string")
+      .map((name) => ({
+        name,
+        prefixed: `r/${name}`,
+        subscribers: 0,
+        publicDescription: "",
+        subredditType: "",
+        over18: false,
+        createdUtc: 0,
+        url: `/r/${name}/`,
+        source: "exact" as const,
+      })),
   };
 }
 

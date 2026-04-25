@@ -60,6 +60,7 @@ describe("registry", () => {
       "users:list-comments": { username: "yak", sort: "new", limit: 10 },
       "search:posts": { query: "react", sort: "relevance", time: "all", limit: 10 },
       "search:comments": { query: "react", subreddit: "typescript", sort: "new", time: "week", limit: 5 },
+      "subreddits:search": { query: "astoria", mode: "fuzzy", limit: 25 },
     };
     for (const tool of Object.values(registry.tools)) {
       const key = `${tool.module}:${tool.name}`;
@@ -151,6 +152,56 @@ describe("registry", () => {
     expect(pv.path).toBe(
       "/r/startups/search.json?raw_json=1&type=comment&q=cofounder&sort=new&t=month&limit=2&restrict_sr=on",
     );
+  });
+
+  test("subreddits search builds the right path per mode", () => {
+    const registry = buildRegistry();
+    const tool = findTool(registry, "subreddits", "search")!;
+
+    const fuzzy = tool.buildPreview({
+      params: { query: "astoria", mode: "fuzzy", limit: 10 },
+      baseUrl: "https://oauth.reddit.com",
+    });
+    if (fuzzy.kind !== "request") throw new Error("expected request");
+    expect(fuzzy.path).toBe(
+      "/subreddits/search.json?raw_json=1&q=astoria&limit=10&include_over_18=false",
+    );
+
+    const prefix = tool.buildPreview({
+      params: { query: "astoria", mode: "prefix", limit: 5, includeNsfw: true },
+      baseUrl: "https://oauth.reddit.com",
+    });
+    if (prefix.kind !== "request") throw new Error("expected request");
+    expect(prefix.path).toBe(
+      "/api/subreddit_autocomplete_v2.json?query=astoria&limit=5&include_over_18=true&include_profiles=false",
+    );
+
+    const exact = tool.buildPreview({
+      params: { query: "astoria", mode: "exact" },
+      baseUrl: "https://oauth.reddit.com",
+    });
+    if (exact.kind !== "request") throw new Error("expected request");
+    expect(exact.path).toBe(
+      "/api/search_reddit_names.json?query=astoria&exact=false&include_over_18=off",
+    );
+  });
+
+  test("subreddits search applies min-subscribers post-filter for non-exact modes", () => {
+    const registry = buildRegistry();
+    const tool = findTool(registry, "subreddits", "search")!;
+    const raw = {
+      data: {
+        children: [
+          { kind: "t5", data: { display_name: "A", subscribers: 500 } },
+          { kind: "t5", data: { display_name: "B", subscribers: 5000 } },
+          { kind: "t5", data: { display_name: "C", subscribers: 50000 } },
+        ],
+      },
+    };
+    const result = tool.normalize!(raw, { query: "x", mode: "fuzzy", minSubscribers: 1000 }) as {
+      subreddits: Array<{ name: string; subscribers: number }>;
+    };
+    expect(result.subreddits.map((s) => s.name)).toEqual(["B", "C"]);
   });
 
   test("supports auth and subreddit planning previews", () => {

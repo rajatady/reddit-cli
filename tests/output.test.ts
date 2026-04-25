@@ -79,6 +79,16 @@ describe("output/toolOutputSlug", () => {
     ).toBe("search-comments-all-bun.json");
   });
 
+  test("subreddits search slug includes mode and query", () => {
+    expect(
+      toolOutputSlug({
+        module: "subreddits",
+        tool: "search",
+        params: { query: "astoria", mode: "prefix" },
+      }),
+    ).toBe("subreddits-search-prefix-astoria.json");
+  });
+
   test("unknown tool uses module-tool-timestamp fallback", () => {
     const slug = toolOutputSlug({ module: "x", tool: "y", params: {} });
     expect(slug).toMatch(/^x-y-\d+\.json$/);
@@ -224,6 +234,21 @@ describe("output/summarizeResponse", () => {
     });
     expect(lines[0]).toContain("search posts: 1 hits");
     expect(lines[0]).toContain("scope=r/typescript");
+  });
+
+  test("subreddits search summary lists top hits with subscribers", () => {
+    const lines = summarizeResponse("subreddits", "search", {
+      query: "astoria",
+      mode: "fuzzy",
+      subreddits: [
+        { name: "NYCapartments", subscribers: 204839, publicDescription: "NYC apartments." },
+        { name: "AstoriaQueens", subscribers: 2191, publicDescription: "Local sub." },
+      ],
+    });
+    expect(lines[0]).toContain("subreddits search: 2 hits");
+    expect(lines[0]).toContain("mode=fuzzy");
+    expect(lines.some((l) => l.includes("NYCapartments"))).toBe(true);
+    expect(lines.some((l) => l.includes("204,839"))).toBe(true);
   });
 
   test("unknown tool summary falls back to ok", () => {

@@ -11,6 +11,9 @@ import {
   setActiveAccount,
   updateActiveAccountTokens,
 } from "../src/lib/config.ts";
+import { VERSION } from "../src/lib/version.ts";
+
+const UA = `redditer/${VERSION}`;
 
 const tempDirs: string[] = [];
 
@@ -55,7 +58,7 @@ describe("config", () => {
 
     expect(config.baseUrl).toBe("https://oauth.reddit.com");
     expect(config.clientId).toBeNull();
-    expect(config.userAgent).toBe("redditer/0.1.2");
+    expect(config.userAgent).toBe(UA);
   });
 
   test("persists app credentials and active account on save, env can still override", () => {
@@ -65,7 +68,7 @@ describe("config", () => {
       clientId: "saved-client",
       clientSecret: "saved-secret",
       redirectUri: "http://127.0.0.1:9780/callback",
-      userAgent: "redditer/0.1.2",
+      userAgent: UA,
       scope: "identity read",
       accessToken: "access-1",
       refreshToken: "refresh-1",
@@ -93,7 +96,7 @@ describe("config", () => {
       homeDir,
       clientId: "abc",
       redirectUri: "http://127.0.0.1:9780/callback",
-      userAgent: "redditer/0.1.2",
+      userAgent: UA,
       scope: "identity",
       accessToken: "token",
       refreshToken: "refresh",

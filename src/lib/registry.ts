@@ -3,8 +3,11 @@ import {
   normalizeListing,
   normalizePostWithComments,
   normalizeProfile,
+  normalizeSubredditListing,
+  normalizeSubredditNames,
   parseRedditPostUrl,
   parseSubreddit,
+  type RedditSubredditSearchResult,
 } from "./reddit.ts";
 
 export type ToolOptionType = "string" | "number" | "boolean";
@@ -510,6 +513,87 @@ export function buildRegistry(): Registry {
           subreddit: parseSubreddit(String(params.subreddit)),
           sort: String(params.sort ?? "hot"),
         }),
+    },
+    {
+      module: "subreddits",
+      name: "search",
+      title: "Search Subreddits",
+      description:
+        "Search Reddit for subreddits by query. Three modes: fuzzy (semantic, full metadata), prefix (name autocomplete with subscribers), exact (name-only fast existence check).",
+      kind: "request",
+      options: {
+        query: {
+          type: "string",
+          description: "Search query (subreddit name fragment, topic, locality, etc.).",
+          required: true,
+        },
+        mode: {
+          type: "string",
+          description:
+            "Endpoint to hit. fuzzy=/subreddits/search (semantic, full metadata), prefix=/api/subreddit_autocomplete_v2 (autocomplete + subs), exact=/api/search_reddit_names (names only).",
+          defaultValue: "fuzzy",
+          allowedValues: ["fuzzy", "prefix", "exact"],
+        },
+        limit: {
+          type: "number",
+          description: "Max results to fetch.",
+          defaultValue: 25,
+        },
+        minSubscribers: {
+          type: "number",
+          description:
+            "Drop subreddits with fewer than this many subscribers (post-fetch filter; ignored for exact mode which has no subscriber data).",
+        },
+        includeNsfw: {
+          type: "boolean",
+          description: "Include NSFW (over_18) subreddits in results.",
+          defaultValue: false,
+        },
+      },
+      annotations: { cacheable: true, writes: false },
+      example:
+        'redditer subreddits search --query astoria --mode fuzzy --limit 25 --min-subscribers 1000 --why "find local subs"',
+      buildPreview: ({ params, baseUrl }) => {
+        const query = String(params.query ?? "");
+        const mode = String(params.mode ?? "fuzzy");
+        const limit = Number(params.limit ?? 25);
+        const includeNsfw = Boolean(params.includeNsfw);
+        const q = encodeURIComponent(query);
+        let path: string;
+        if (mode === "prefix") {
+          path = `/api/subreddit_autocomplete_v2.json?query=${q}&limit=${limit}&include_over_18=${includeNsfw}&include_profiles=false`;
+        } else if (mode === "exact") {
+          path = `/api/search_reddit_names.json?query=${q}&exact=false&include_over_18=${includeNsfw ? "on" : "off"}`;
+        } else {
+          path = `/subreddits/search.json?raw_json=1&q=${q}&limit=${limit}&include_over_18=${includeNsfw}`;
+        }
+        return {
+          kind: "request",
+          method: "GET",
+          url: `${baseUrl}${path}`,
+          path,
+          cacheKey: `subreddits/search/${mode}/${limit}/${includeNsfw ? "nsfw" : "sfw"}/${query}`,
+        };
+      },
+      normalize: (raw, params) => {
+        const query = String(params.query ?? "");
+        const mode = String(params.mode ?? "fuzzy") as "fuzzy" | "prefix" | "exact";
+        let result: RedditSubredditSearchResult;
+        if (mode === "exact") {
+          result = normalizeSubredditNames(raw, { query });
+        } else {
+          result = normalizeSubredditListing(raw, { query, mode });
+        }
+        const minRaw = params.minSubscribers;
+        const min = typeof minRaw === "number" ? minRaw : minRaw === undefined ? null : Number(minRaw);
+        if (min !== null && Number.isFinite(min) && mode !== "exact") {
+          result = {
+            ...result,
+            subreddits: result.subreddits.filter((s) => s.subscribers >= min),
+          };
+        }
+        return result;
+      },
     },
   ];
 
