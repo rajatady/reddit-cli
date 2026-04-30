@@ -3,6 +3,7 @@ coverage/
 dist/
 .reddit-cli/
 .plans/
+research/
 .DS_Store
 *.sqlite
 *.sqlite-shm

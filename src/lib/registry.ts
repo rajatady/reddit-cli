@@ -73,6 +73,7 @@ function buildToolKey(moduleName: string, toolName: string): string {
 const TIME_SORTS = new Set(["top", "controversial"]);
 const TIME_VALUES = ["all", "year", "month", "week", "day", "hour"];
 const SEARCH_SORT_VALUES = ["relevance", "hot", "top", "new", "comments"];
+const COMMENT_SORT_VALUES = ["confidence", "top", "new", "controversial", "old", "qa"];
 
 // Reddit honors ?t=<all|year|month|week|day|hour> only on top/controversial.
 // For other sorts the param is ignored; we strip it to keep URLs clean.
@@ -88,13 +89,16 @@ function timeKey(sort: string, rawTime: unknown): string {
 
 function postRequest(params: Record<string, unknown>, baseUrl: string): RequestPreview {
   const post = parseRedditPostUrl(String(params.postUrl));
-  const path = `/r/${post.subreddit}/comments/${post.postId}/.json?raw_json=1`;
+  const sortRaw = params.sort;
+  const sortQs = sortRaw ? `&sort=${String(sortRaw)}` : "";
+  const sortKey = sortRaw ? String(sortRaw) : "default";
+  const path = `/r/${post.subreddit}/comments/${post.postId}/.json?raw_json=1${sortQs}`;
   return {
     kind: "request",
     method: "GET",
     url: `${baseUrl}${path}`,
     path,
-    cacheKey: `posts/${post.subreddit}/${post.postId}`,
+    cacheKey: `posts/${post.subreddit}/${post.postId}/${sortKey}`,
   };
 }
 
@@ -454,10 +458,15 @@ export function buildRegistry(): Registry {
           description: "Full Reddit post URL.",
           required: true,
         },
+        sort: {
+          type: "string",
+          description: "Comment sort.",
+          allowedValues: COMMENT_SORT_VALUES,
+        },
       },
       annotations: { cacheable: true, writes: false },
       example:
-        'redditer comments get-comments --post-url https://www.reddit.com/r/bun/comments/abc/x/ --why "read thread"',
+        'redditer comments get-comments --post-url https://www.reddit.com/r/bun/comments/abc/x/ --sort old --why "read thread"',
       buildPreview: ({ params, baseUrl }) => postRequest(params, baseUrl),
       normalize: (raw) => normalizePostWithComments(raw),
     },

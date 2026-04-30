@@ -46,7 +46,19 @@ describe("registry", () => {
     if (pv.kind !== "request") throw new Error("expected request preview");
     expect(pv.url).toBe("https://oauth.reddit.com/r/bun/comments/abc123/.json?raw_json=1");
     expect(pv.path).toBe("/r/bun/comments/abc123/.json?raw_json=1");
-    expect(pv.cacheKey).toBe("posts/bun/abc123");
+    expect(pv.cacheKey).toBe("posts/bun/abc123/default");
+  });
+
+  test("comments get-comments accepts a sort and threads it into path + cacheKey", () => {
+    const registry = buildRegistry();
+    const tool = findTool(registry, "comments", "get-comments")!;
+    const pv = tool.buildPreview({
+      params: { postUrl: "https://www.reddit.com/r/bun/comments/abc123/x/", sort: "old" },
+      baseUrl: "https://oauth.reddit.com",
+    });
+    if (pv.kind !== "request") throw new Error("expected request preview");
+    expect(pv.path).toBe("/r/bun/comments/abc123/.json?raw_json=1&sort=old");
+    expect(pv.cacheKey).toBe("posts/bun/abc123/old");
   });
 
   test("every registered tool builds a preview without throwing", () => {
