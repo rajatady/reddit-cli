@@ -235,7 +235,19 @@ describe("registry", () => {
       method: "GET",
       url: "https://oauth.reddit.com/r/typescript/new.json?raw_json=1&limit=10",
       path: "/r/typescript/new.json?raw_json=1&limit=10",
-      cacheKey: "subreddits/typescript/new/na/10",
+      cacheKey: "subreddits/typescript/new/na/10/start",
     });
+  });
+
+  test("subreddits list-posts threads after cursor into path + cacheKey", () => {
+    const registry = buildRegistry();
+    const tool = findTool(registry, "subreddits", "list-posts")!;
+    const pv = tool.buildPreview({
+      params: { subreddit: "bun", sort: "new", limit: 100, after: "t3_abc123" },
+      baseUrl: "https://oauth.reddit.com",
+    });
+    if (pv.kind !== "request") throw new Error("expected request preview");
+    expect(pv.path).toBe("/r/bun/new.json?raw_json=1&limit=100&after=t3_abc123");
+    expect(pv.cacheKey).toBe("subreddits/bun/new/na/100/a:t3_abc123");
   });
 });

@@ -496,25 +496,36 @@ export function buildRegistry(): Registry {
         },
         limit: {
           type: "number",
-          description: "Maximum number of posts to fetch.",
+          description: "Posts per page (Reddit caps at 100).",
           defaultValue: 25,
+        },
+        after: {
+          type: "string",
+          description: "Cursor for next page (fullname like t3_abc123, taken from prior response).",
+        },
+        before: {
+          type: "string",
+          description: "Cursor for previous page (fullname like t3_abc123).",
         },
       },
       annotations: { cacheable: true, writes: false },
       example:
-        'redditer subreddits list-posts --subreddit bun --sort top --time week --limit 50 --why "weekly digest" --out -',
+        'redditer subreddits list-posts --subreddit bun --sort new --limit 100 --after t3_abc123 --why "page 2" --out -',
       buildPreview: ({ params, baseUrl }) => {
         const subreddit = parseSubreddit(String(params.subreddit));
         const sort = String(params.sort ?? "hot");
         const limit = Number(params.limit ?? 25);
         const timeQs = timeQuery(sort, params.time);
-        const path = `/r/${subreddit}/${sort}.json?raw_json=1&limit=${limit}${timeQs}`;
+        const after = params.after ? `&after=${encodeURIComponent(String(params.after))}` : "";
+        const before = params.before ? `&before=${encodeURIComponent(String(params.before))}` : "";
+        const path = `/r/${subreddit}/${sort}.json?raw_json=1&limit=${limit}${timeQs}${after}${before}`;
+        const cursorKey = params.after ? `a:${params.after}` : params.before ? `b:${params.before}` : "start";
         return {
           kind: "request",
           method: "GET",
           url: `${baseUrl}${path}`,
           path,
-          cacheKey: `subreddits/${subreddit}/${sort}/${timeKey(sort, params.time)}/${limit}`,
+          cacheKey: `subreddits/${subreddit}/${sort}/${timeKey(sort, params.time)}/${limit}/${cursorKey}`,
         };
       },
       normalize: (raw, params) =>
